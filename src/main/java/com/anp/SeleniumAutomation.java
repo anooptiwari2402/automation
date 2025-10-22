@@ -15,6 +15,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.io.IOException;
+import java.nio.file.Path;
 
 public class SeleniumAutomation {
     private static final int NUM_TABS = 10000;
@@ -51,7 +55,20 @@ public class SeleniumAutomation {
             "Mozilla/5.0 (Linux; Android 11; SM-A515F) AppleWebKit/537.36 Chrome/88.0.4324.93 Mobile Safari/537.36",
             "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148"
     );
-    private static final String VIDEO_URL = "https://www.youtube.com/shorts/MY1mCJQhKzM"; // Example URL
+    
+    // Load video URLs from file
+    private static final List<String> VIDEO_URLS = loadVideoUrls();
+    
+    private static List<String> loadVideoUrls() {
+        try {
+            Path filePath = Paths.get("docs", "video_urls.txt");
+            return Collections.unmodifiableList(Files.readAllLines(filePath));
+        } catch (IOException e) {
+            System.err.println("Failed to load video URLs from file: " + e.getMessage());
+            // Fallback to a single URL if file can't be read
+            return Collections.singletonList("https://www.youtube.com/shorts/MY1mCJQhKzM");
+        }
+    }
 
     public static void main(String[] args) throws InterruptedException {
 
@@ -82,9 +99,11 @@ public class SeleniumAutomation {
 
                     driver = new ChromeDriver(options);
 
-                    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10)); // CHANGE: Added missing wait variable declaration
-
-                    driver.get(VIDEO_URL);
+                    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+                    
+                    // Get a random URL from the list
+                    String videoUrl = VIDEO_URLS.get(rand.nextInt(VIDEO_URLS.size()));
+                    driver.get(videoUrl);
 
                     System.out.println("[" + finalI + "] Opened with proxy: " + proxyAddr);
                     handleYouTubeConsent(driver, wait, finalI);
