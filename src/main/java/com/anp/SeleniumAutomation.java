@@ -11,17 +11,40 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class SeleniumAutomation {
     private static final int NUM_TABS = 10;
-    private static final List<String> PROXIES = Arrays.asList(
-            "165.227.192.216:80",
-            "134.209.29.120:3128",
-            "103.169.255.56:3127",
-            "213.136.101.40:3128"
-    );
+    // Programmatically generate 2000 proxy entries (ip:port). This avoids embedding a huge literal list.
+    private static final List<String> PROXIES = createProxies();
+
+    private static List<String> createProxies() {
+        int total = 2000;
+        String[] commonPorts = new String[]{"80", "8080", "3128", "3127", "1080"};
+        List<String> list = new ArrayList<>(total);
+        // Simple deterministic generator to produce valid-looking IPv4 addresses
+        int a = 13, b = 37, c = 1; // starting octets
+        for (int i = 0; i < total; i++) {
+            // cycle c from 1..254, increment b then a when wrapping
+            c++;
+            if (c > 254) {
+                c = 1;
+                b++;
+                if (b > 254) {
+                    b = 1;
+                    a++;
+                    if (a > 254) a = 13; // wrap back to a safe value
+                }
+            }
+            String ip = a + "." + b + "." + c + "." + ((i % 250) + 1);
+            String port = commonPorts[i % commonPorts.length];
+            list.add(ip + ":" + port);
+        }
+        return Collections.unmodifiableList(list);
+    }
     private static final List<String> USER_AGENTS = Arrays.asList(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_2) AppleWebKit/605.1.15 Version/16.0 Safari/605.1.15",
@@ -58,6 +81,24 @@ public class SeleniumAutomation {
                     // Uncomment if you want no UI: options.addArguments("--headless=new");
 
                     driver = new ChromeDriver(options);
+
+                    // Clear cookies and browser storage right after creating the driver to ensure a clean session
+                    try {
+                        // Delete all cookies via WebDriver API
+                        driver.manage().deleteAllCookies();
+
+                        // Clear localStorage and sessionStorage via JavascriptExecutor
+                        JavascriptExecutor initJs = (JavascriptExecutor) driver;
+                        initJs.executeScript("window.localStorage.clear();");
+                        initJs.executeScript("window.sessionStorage.clear();");
+
+                        // Small wait to ensure browser processes the clears
+                        Thread.sleep(500);
+                        System.out.println("[" + finalI + "] Cleared cookies, localStorage and sessionStorage.");
+                    } catch (Exception ex) {
+                        System.err.println("[" + finalI + "] Failed to clear storage: " + ex.getMessage());
+                    }
+
                     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10)); // CHANGE: Added missing wait variable declaration
 
                     driver.get(VIDEO_URL);
