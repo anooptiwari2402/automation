@@ -40,7 +40,7 @@ public class SeleniumAutomation {
                 }
             }
             String ip = a + "." + b + "." + c + "." + ((i % 250) + 1);
-            String port = "80"
+            String port = "80";
             list.add(ip + ":" + port);
         }
         return Collections.unmodifiableList(list);
