@@ -17,13 +17,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class SeleniumAutomation {
-    private static final int NUM_TABS = 10;
+    private static final int NUM_TABS = 10000;
     // Programmatically generate 2000 proxy entries (ip:port). This avoids embedding a huge literal list.
     private static final List<String> PROXIES = createProxies();
 
     private static List<String> createProxies() {
         int total = 2000;
-        String[] commonPorts = new String[]{"80", "8080", "3128", "3127", "1080"};
+        // String[] commonPorts = new String[]{"80", "8080", "3128", "3127", "1080"};
         List<String> list = new ArrayList<>(total);
         // Simple deterministic generator to produce valid-looking IPv4 addresses
         int a = 13, b = 37, c = 1; // starting octets
@@ -40,7 +40,7 @@ public class SeleniumAutomation {
                 }
             }
             String ip = a + "." + b + "." + c + "." + ((i % 250) + 1);
-            String port = commonPorts[i % commonPorts.length];
+            String port = "80"
             list.add(ip + ":" + port);
         }
         return Collections.unmodifiableList(list);
@@ -51,13 +51,13 @@ public class SeleniumAutomation {
             "Mozilla/5.0 (Linux; Android 11; SM-A515F) AppleWebKit/537.36 Chrome/88.0.4324.93 Mobile Safari/537.36",
             "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148"
     );
-    private static final String VIDEO_URL = "https://www.youtube.com/shorts/dZsI9edsjtk"; // Example URL
+    private static final String VIDEO_URL = "https://www.youtube.com/shorts/MY1mCJQhKzM"; // Example URL
 
     public static void main(String[] args) throws InterruptedException {
 
-        System.setProperty("webdriver.chrome.driver", "C:\\Users\\anotiwar\\Downloads\\chromedriver-win64\\chromedriver-win64\\chromedriver.exe");
+        System.setProperty("webdriver.chrome.driver", "C:\\Users\\anotiwari\\Downloads\\chromedriver-win64\\chromedriver-win64\\chromedriver.exe");
 
-        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
 
         for (int i = 0; i < NUM_TABS; i++) {
             int finalI = i + 1;
@@ -82,7 +82,32 @@ public class SeleniumAutomation {
 
                     driver = new ChromeDriver(options);
 
-                    // Clear cookies and browser storage right after creating the driver to ensure a clean session
+                    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10)); // CHANGE: Added missing wait variable declaration
+
+                    driver.get(VIDEO_URL);
+
+                    System.out.println("[" + finalI + "] Opened with proxy: " + proxyAddr);
+                    handleYouTubeConsent(driver, wait, finalI);
+
+                    // Wait for video element and interact
+                    // WebElement video = wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("video")));
+                    // Actions action = new Actions(driver);
+                    // action.moveToElement(video).click().perform();
+
+                    Thread.sleep(3000);
+
+                    JavascriptExecutor js = (JavascriptExecutor) driver;
+                    for (int s = 0; s < 10; s++) {
+                        js.executeScript("window.scrollBy(0, 100);");
+                        Thread.sleep(2000);
+                    }
+
+                    Thread.sleep(25000); // Total ~45s
+
+                } catch (Exception e) {
+                    System.err.println("[" + finalI + "] Error: " + e.getMessage());
+                } finally {
+                    // Clear cookies and browser storage right after Playing the video to ensure a clean session
                     try {
                         // Delete all cookies via WebDriver API
                         driver.manage().deleteAllCookies();
@@ -99,31 +124,6 @@ public class SeleniumAutomation {
                         System.err.println("[" + finalI + "] Failed to clear storage: " + ex.getMessage());
                     }
 
-                    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10)); // CHANGE: Added missing wait variable declaration
-
-                    driver.get(VIDEO_URL);
-
-                    System.out.println("[" + finalI + "] Opened with proxy: " + proxyAddr);
-                    handleYouTubeConsent(driver, wait, finalI);
-
-                    // Wait for video element and interact
-                    WebElement video = wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("video")));
-                    Actions action = new Actions(driver);
-                    action.moveToElement(video).click().perform();
-
-                    Thread.sleep(3000);
-
-                    JavascriptExecutor js = (JavascriptExecutor) driver;
-                    for (int s = 0; s < 10; s++) {
-                        js.executeScript("window.scrollBy(0, 100);");
-                        Thread.sleep(2000);
-                    }
-
-                    Thread.sleep(25000); // Total ~45s
-
-                } catch (Exception e) {
-                    System.err.println("[" + finalI + "] Error: " + e.getMessage());
-                } finally {
                     if (driver != null) {
                         driver.quit();
                     }
